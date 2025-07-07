@@ -1,0 +1,218 @@
+$date
+	Mon Jul 07 17:49:33 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module buffer_module_tb $end
+$var wire 16 ! data_out [15:0] $end
+$var reg 4 " address [3:0] $end
+$var reg 1 # clk $end
+$var reg 16 $ data_in [15:0] $end
+$var reg 1 % oe $end
+$var reg 1 & write $end
+$scope module buffer_dut $end
+$var wire 4 ' address [3:0] $end
+$var wire 1 # clk $end
+$var wire 16 ( data_in [15:0] $end
+$var wire 1 # operational_clock $end
+$var wire 1 % output_enable $end
+$var wire 1 & write $end
+$var wire 16 ) data_out [15:0] $end
+$var parameter 32 * ADDRESS_WIDTH $end
+$var parameter 32 + DATA_WIDTH $end
+$var parameter 32 , DEPTH $end
+$var reg 16 - temp_data [15:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b10000 ,
+b10000 +
+b100 *
+$end
+#0
+$dumpvars
+bx -
+bz )
+bx (
+bx '
+1&
+1%
+bx $
+0#
+bx "
+bz !
+$end
+#2000
+b1111011 $
+b1111011 (
+#3000
+b0 "
+b0 '
+#5000
+1#
+#10000
+0#
+#15000
+1#
+#20000
+0#
+#23000
+0&
+#25000
+b1111011 -
+b1111011 !
+b1111011 )
+1#
+#30000
+bz !
+bz )
+0#
+#35000
+b1111011 !
+b1111011 )
+1#
+#40000
+bz !
+bz )
+0#
+#43000
+1&
+#44000
+b11101010 $
+b11101010 (
+#45000
+b1 "
+b1 '
+1#
+#50000
+0#
+#55000
+1#
+#60000
+0#
+#65000
+b11101010 -
+b11101010 !
+b11101010 )
+1#
+0&
+#70000
+bz !
+bz )
+0#
+#75000
+b11101010 !
+b11101010 )
+1#
+#80000
+bz !
+bz )
+0#
+#85000
+1#
+1&
+#86000
+b101011001 $
+b101011001 (
+#87000
+b10 "
+b10 '
+#90000
+0#
+#95000
+1#
+#100000
+0#
+#105000
+1#
+#107000
+b11101010 !
+b11101010 )
+0&
+#110000
+bz !
+bz )
+0#
+#115000
+b101011001 -
+b101011001 !
+b101011001 )
+1#
+#120000
+bz !
+bz )
+0#
+#125000
+b101011001 !
+b101011001 )
+1#
+#127000
+b0 "
+b0 '
+#130000
+bz !
+bz )
+0#
+#135000
+b1111011 -
+b1111011 !
+b1111011 )
+1#
+#140000
+bz !
+bz )
+0#
+#145000
+b1111011 !
+b1111011 )
+1#
+#150000
+bz !
+bz )
+0#
+#155000
+b1111011 !
+b1111011 )
+1#
+#160000
+bz !
+bz )
+0#
+#165000
+b1111011 !
+b1111011 )
+1#
+#170000
+bz !
+bz )
+0#
+#175000
+b1111011 !
+b1111011 )
+1#
+#180000
+bz !
+bz )
+0#
+#185000
+b1111011 !
+b1111011 )
+1#
+#190000
+bz !
+bz )
+0#
+#195000
+b1111011 !
+b1111011 )
+1#
+#200000
+bz !
+bz )
+0#
