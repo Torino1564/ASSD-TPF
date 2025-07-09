@@ -26,6 +26,13 @@ module diff_module_tb;
     // Resultado de la funcion de diferencias
     reg [38:0] resultados [MAX_TAU];
     wire [38:0] resultado_diferencias;
+    wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
+    genvar i;
+    generate
+        for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
+            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i];
+        end
+    endgenerate
 
     // Instancia del módulo
     diff_module #(
@@ -33,12 +40,10 @@ module diff_module_tb;
         .DATA_WIDTH(DATA_WIDTH_BITS)
     ) dut (
         .clk(clk),
-        .address(address),
-        .initial_address(initial_address),
         .tau(tau),
         .reset(reset),
         .ready(ready),
-        .data_out(data_out),
+        .data_in(flat),
         .accumulator(resultado_diferencias)
     );
 
