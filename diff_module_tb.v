@@ -2,9 +2,10 @@
 
 module diff_module_tb;
 
-    parameter DATA_WIDTH_BITS = 16;
-    parameter WINDOW_SIZE_BITS = 4; // 16 muestras (reducido para test rápido)
-    parameter BUFFER_SIZE = 1 << WINDOW_SIZE_BITS;
+    parameter DATA_WIDTH_BITS = 8;
+    parameter WINDOW_SIZE_BITS = 8; // 256 muestras (reducido para test rápido)
+    parameter BUFFER_SIZE = 1 << (WINDOW_SIZE_BITS + 1);
+    parameter FS = 2000;
     parameter MAX_TAU = 40; // representa 20ms
 
     reg clk = 1;
@@ -41,13 +42,17 @@ module diff_module_tb;
         .accumulator(resultado_diferencias)
     );
 
-    initial begin
-        // Inicializo memoria con algunos datos de prueba
-        integer i;
-        for (i = 1; i < 2*BUFFER_SIZE + 1; i = i + 1) begin
-            memory[i-1] = i;  // Datos lineales: 0, 1, 2, ..., 31
-        end
+initial begin
+    // Inicializo memoria con una onda seno escalada entre 0 y 255
+    integer i;
+    real value;
+    for (i = 0; i < 2*BUFFER_SIZE; i = i + 1) begin
+        // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
+        value = $sin(2.0 * 100 * 3.14159265 * i / FS);
+        // Escalar a rango 0–255 para 8 bits sin signo
+        memory[i] = $rtoi((value + 1.0) * 127.5);
     end
+end
 
     // Simula lectura de memoria
     always @(posedge clk) begin
@@ -70,9 +75,17 @@ module diff_module_tb;
             delay <= 0;
             reset <= 0;
         end
-        if (tau > 3) begin
+        if (tau == 40) begin
             reset <= 1;
             total_ready <= 1;
+        end
+    end
+
+    reg [7:0] mem_out = 0;
+    initial begin
+        integer j;
+        for (j = 0; j < 2*BUFFER_SIZE; j = j + 1) begin
+            #20 mem_out = memory[j];
         end
     end
 
