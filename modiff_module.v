@@ -8,7 +8,9 @@ module modiff_module
     input wire clk,
     input wire reset,
     input wire [DATA_WIDTH*(2**WINDOW_SIZE_BITS + MAX_TAU)-1:0] data,
-    output reg ready
+    output reg ready,
+    output reg [INTERMEDIATE_DATA_WIDTH-1:0] results [MAX_TAU],
+    output reg [INTERMEDIATE_DATA_WIDTH-1:0] average
 );
 
 wire [INTERMEDIATE_DATA_WIDTH-1:0] diff_results [MAX_TAU];
@@ -55,8 +57,6 @@ sar_divisor_module #(.BITS(DIV_SIZE_BITS)) sar_divisor_mod (
     .divisor(divisor),
     .result(div_result)   
 );
-
-reg [INTERMEDIATE_DATA_WIDTH-1:0] results [MAX_TAU];
 
 // Registers
 reg [WINDOW_SIZE_BITS-1:0]                          sum_index;
@@ -107,7 +107,6 @@ reg new_calculated_average;
 reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum;
 reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum_comb;
 
-reg [INTERMEDIATE_DATA_WIDTH-1:0] average;
 reg [INTERMEDIATE_DATA_WIDTH-1:0] new_average;
 
 integer i;
@@ -147,7 +146,7 @@ always @(*) begin
                     if (div_ready) begin
                         new_average <= div_result;
                         new_dividing <= 0;
-                        results[0] <= div_result;
+                        results[0] <= div_result << 1;
                         new_calculated_average <= 1;
                     end
                 end
@@ -170,7 +169,7 @@ always @(*) begin
             end
         end
     end
-    if (sum_index == MAX_TAU - 1) begin
+    if (sum_index == MAX_TAU) begin
         new_ready <= 1;
     end
 end

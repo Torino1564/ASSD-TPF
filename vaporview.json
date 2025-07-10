@@ -4,20 +4,20 @@
   "markerTime": null,
   "altMarkerTime": null,
   "selectedSignal": null,
-  "zoomRatio": 0.00005343621895346033,
-  "scrollLeft": 899.0000052085845,
+  "zoomRatio": 0.0064,
+  "scrollLeft": 404597.00320000004,
   "displayedSignals": [
     {
-      "netlistId": 338,
-      "name": "modiff_module_tb.modiff_dut.sum_index",
+      "netlistId": 14,
+      "name": "modiff_module_tb.k",
       "numberFormat": "decimal",
       "colorIndex": 0,
       "renderType": "multiBit",
       "valueLinkCommand": ""
     },
     {
-      "netlistId": 323,
-      "name": "modiff_module_tb.modiff_dut.current_result",
+      "netlistId": 10,
+      "name": "modiff_module_tb.dt_prima_out",
       "numberFormat": "decimal",
       "colorIndex": 0,
       "renderType": "multiBit",

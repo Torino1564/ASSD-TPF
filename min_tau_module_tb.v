@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module modiff_module_tb;
+module min_tau_module_tb;
 
     parameter DATA_WIDTH_BITS = 8;
     parameter WINDOW_SIZE_BITS = 8; // 256 muestras (reducido para test rápido)
@@ -27,61 +27,49 @@ module modiff_module_tb;
         end
     endgenerate
 
-    wire [INTERMEDIATE_DATA_WIDTH-1:0] dt_prima [MAX_TAU];
-
+    wire [7:0] min_tau;
 
     // Instancia del módulo
-    modiff_module #(
+    min_tau_module #(
         .WINDOW_SIZE_BITS(WINDOW_SIZE_BITS),
         .DATA_WIDTH(DATA_WIDTH_BITS),
         .MAX_TAU(MAX_TAU),
-        .INTERMEDIATE_DATA_WIDTH(INTERMEDIATE_DATA_WIDTH)
-    ) modiff_dut (
+        .INTERMEDIATE_DATA_WIDTH(INTERMEDIATE_DATA_WIDTH),
+        .THRESHOLD(1)
+    ) min_tau_mod (
         .clk(clk),
         .reset(reset),
         .ready(ready),
         .data(flat),
-        .results(dt_prima)
+        .min_tau(min_tau)
     );
 
+    integer k;
+    real value;
     initial begin
         // Inicializo memoria con una onda seno escalada entre 0 y 255
-        integer i;
-        real value;
-        for (i = 0; i < 2*BUFFER_SIZE; i = i + 1) begin
+        for (k = 0; k < 2*BUFFER_SIZE; k = k + 1) begin
             // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
-            value = $sin(2.0 * 105.26 * 3.14159265 * i / FS);
+            value = $sin(2.0 * 105.26 * 3.14159265 * k / FS);
             // Escalar a rango 0–255 para 8 bits sin signo
-            memory[i] = $rtoi((value + 1.0) * 127.5);
+            memory[k] = $rtoi((value + 1.0) * 127.5);
         end
     end
     
-
     reg [DATA_WIDTH_BITS-1:0] mem_out = 0;
+    integer j;
     initial begin
-        integer j;
         for (j = 0; j < 2*BUFFER_SIZE; j = j + 1) begin
             #20 mem_out = memory[j];
         end
     end
 
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] dt_prima_out = 0;
-    reg done_displaying = 0;
-    integer k;
-    initial begin
-        #10 wait (ready == 1);
-        for (k = 0; k < MAX_TAU; k = k + 1) begin
-            #20 dt_prima_out = dt_prima[k];
-        end
-        done_displaying = 1;
-    end
-
     initial begin
         // Dump de la simulación
         $dumpfile("waveform.vcd");
-        $dumpvars(0, modiff_module_tb);
+        $dumpvars(0, min_tau_module_tb);
         #20 reset = 0;
-        wait (done_displaying == 1);
+        wait (ready == 1);
         #20 $finish;
     end
 endmodule
