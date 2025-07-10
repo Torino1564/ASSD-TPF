@@ -1,9 +1,9 @@
-    module buffer_module
-    #(
-        parameter ADDRESS_WIDTH = 4,
-        parameter DATA_WIDTH = 16,
-        parameter DEPTH = 16
-    )
+module buffer_module
+#(
+    parameter ADDRESS_WIDTH = 4,
+    parameter DATA_WIDTH = 16,
+    parameter DEPTH = 16
+)
 (
     input wire clk,
     input [ADDRESS_WIDTH-1:0] address,

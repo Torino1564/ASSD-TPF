@@ -7,7 +7,8 @@ module top (
     `include "constants.vh" 
     wire clk;
 
-    SB_HFOSC HFOSC_mod(.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clk)); defparam HFOSC_mod.CLKHF_DIV = "0b00";
+    SB_HFOSC HFOSC_mod(.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clk));
+    //defparam HFOSC_mod.CLKHF_DIV = "0b00";
 
     reg [BUFFER_SIZE_BITS-1:0] address;
     reg [DATA_WIDTH_BITS-1:0] data_in;

@@ -1,5 +1,5 @@
 {
     "autoHide.autoHideSideBar": true,
     "autoHide.autoHidePanel": true,
-    "autoHide.autoHideAuxiliaryBar": false
+    "autoHide.autoHideAuxiliaryBar": true
 }
