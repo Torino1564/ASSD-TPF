@@ -1,5 +1,6 @@
 module diff_module #(
     parameter WINDOW_SIZE_BITS = 8,
+    parameter INTERMEDIATE_DATA_WIDTH = 64,
     parameter DATA_WIDTH = 16,
     parameter MAX_TAU = 40 // representa 20ms
 ) (
@@ -8,7 +9,7 @@ module diff_module #(
     input wire[5:0] tau,
     input wire reset,
     output reg ready,
-    output reg [38:0] accumulator
+    output reg [INTERMEDIATE_DATA_WIDTH-1:0] accumulator
 );
     // índice en la sumatoria
     reg [WINDOW_SIZE_BITS-1:0] sum_index = 0;
@@ -20,7 +21,7 @@ module diff_module #(
 
     reg new_ready = 0;
 
-    reg [38:0] new_accumulator = 0;
+    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_accumulator = 0;
 
     always @(posedge clk) begin
         if (reset) begin

@@ -1,0 +1,27 @@
+{
+  "extensionVersion": "1.3.4",
+  "fileName": "d:\\dev\\ASSD-TPF\\waveform.vcd",
+  "markerTime": null,
+  "altMarkerTime": null,
+  "selectedSignal": null,
+  "zoomRatio": 0.00005343621895346033,
+  "scrollLeft": 899.0000052085845,
+  "displayedSignals": [
+    {
+      "netlistId": 338,
+      "name": "modiff_module_tb.modiff_dut.sum_index",
+      "numberFormat": "decimal",
+      "colorIndex": 0,
+      "renderType": "multiBit",
+      "valueLinkCommand": ""
+    },
+    {
+      "netlistId": 323,
+      "name": "modiff_module_tb.modiff_dut.current_result",
+      "numberFormat": "decimal",
+      "colorIndex": 0,
+      "renderType": "multiBit",
+      "valueLinkCommand": ""
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 module modiff_module
 #(
     parameter DATA_WIDTH = 8,
+    parameter INTERMEDIATE_DATA_WIDTH = 64,
     parameter WINDOW_SIZE_BITS = 8,
     parameter MAX_TAU = 40
 ) (
@@ -10,7 +11,7 @@ module modiff_module
     output reg ready
 );
 
-wire [38:0] diff_results [MAX_TAU];
+wire [INTERMEDIATE_DATA_WIDTH-1:0] diff_results [MAX_TAU];
 wire diff_ready;
 reg [MAX_TAU-1:0] diff_reset = 0;
 
@@ -38,7 +39,7 @@ generate
     end
 endgenerate
 
-parameter DIV_SIZE_BITS = 40;
+parameter DIV_SIZE_BITS = INTERMEDIATE_DATA_WIDTH;
 // Modulo division
 wire div_ready;
 reg div_reset = 0;
@@ -55,14 +56,14 @@ sar_divisor_module #(.BITS(DIV_SIZE_BITS)) sar_divisor_mod (
     .result(div_result)   
 );
 
-reg [38:0] results [MAX_TAU];
+reg [INTERMEDIATE_DATA_WIDTH-1:0] results [MAX_TAU];
 
 // Registers
-reg [WINDOW_SIZE_BITS-1:0]  sum_index;
-reg [WINDOW_SIZE_BITS-1:0]  new_sum_index;
-reg [38:0]                  accumulator;
-reg [38:0]                  new_accumulator;
-reg                         new_ready;
+reg [WINDOW_SIZE_BITS-1:0]                          sum_index;
+reg [WINDOW_SIZE_BITS-1:0]                          new_sum_index;
+reg [INTERMEDIATE_DATA_WIDTH-1:0]                   accumulator;
+reg [INTERMEDIATE_DATA_WIDTH-1:0]                   new_accumulator;
+reg                                                 new_ready;
 
 always @(posedge clk) begin
     if (reset) begin
@@ -95,19 +96,19 @@ end
 reg dividing = 0;
 reg new_dividing = 0;
 
-reg [38:0] current = 0;
-reg [38:0] current_result = 0;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] current = 0;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] current_result = 0;
 
 reg calculated_total_sum;
 reg new_calculated_total_sum;
 reg calculated_average;
 reg new_calculated_average;
 
-reg [38:0] total_sum;
-reg [38:0] total_sum_comb;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum_comb;
 
-reg [38:0] average;
-reg [38:0] new_average;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] average;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] new_average;
 
 integer i;
 
@@ -146,6 +147,7 @@ always @(*) begin
                     if (div_ready) begin
                         new_average <= div_result;
                         new_dividing <= 0;
+                        results[0] <= div_result;
                         new_calculated_average <= 1;
                     end
                 end
@@ -161,8 +163,8 @@ always @(*) begin
         else begin
             if (div_reset) div_reset <= 0;
             if (div_ready) begin
-                results[sum_index] = div_result;
-                current_result = results[sum_index];
+                results[sum_index] <= div_result;
+                current_result <= results[sum_index];
                 new_dividing <= 0;
                 new_sum_index <= sum_index + 1;
             end

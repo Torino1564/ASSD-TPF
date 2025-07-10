@@ -44,7 +44,7 @@ module modiff_module_tb;
         real value;
         for (i = 0; i < 2*BUFFER_SIZE; i = i + 1) begin
             // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
-            value = $sin(2.0 * 100 * 3.14159265 * i / FS);
+            value = $sin(2.0 * 329.63 * 3.14159265 * i / FS);
             // Escalar a rango 0–255 para 8 bits sin signo
             memory[i] = $rtoi((value + 1.0) * 127.5);
         end
