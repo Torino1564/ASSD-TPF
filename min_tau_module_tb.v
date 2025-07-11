@@ -15,6 +15,7 @@ module min_tau_module_tb;
     reg reset = 1;
     reg [5:0] tau = 0;
     wire ready;
+    reg [5:0] buffer_offset;
 
     // Memoria simulada con BUFFER_SIZE entradas
     reg [DATA_WIDTH_BITS-1:0] memory [0:2*BUFFER_SIZE-1];
@@ -23,7 +24,7 @@ module min_tau_module_tb;
     genvar i;
     generate
         for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
-            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i];
+            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i + buffer_offset];
         end
     endgenerate
 
@@ -47,6 +48,7 @@ module min_tau_module_tb;
     integer k;
     real value;
     initial begin
+        buffer_offset = 5'd10;
         // Inicializo memoria con una onda seno escalada entre 0 y 255
         for (k = 0; k < 2*BUFFER_SIZE; k = k + 1) begin
             // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)

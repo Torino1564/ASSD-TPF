@@ -27,25 +27,36 @@ module top (
         .write(write)
     );
 
-    wire diff_ready;
+    wire ready;
+    reg reset;
     wire [BUFFER_SIZE_BITS-1:0] diff_address;
+    wire [7:0] result;
 
     always @(posedge clk)
         address <= diff_address;
 
-    diff_module #(
+    // Flatten address
+    wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
+    genvar i;
+    generate
+        for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
+            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i + buffer_offset];
+        end
+    endgenerate
+
+    min_tau_module #(
+        .DATA_WIDTH(DATA_WIDTH_BITS),
+        .INTERMEDIATE_DATA_WIDTH(64),
         .WINDOW_SIZE_BITS(WINDOW_SIZE_BITS),
-        .DATA_WIDTH(DATA_WIDTH_BITS)
-        )
-        diff_mod (
-            .clk(clk),
-            .address(diff_address),
-            .initial_address(0),
-            .tau(0),
-            .reset(0),
-            .ready(diff_ready),
-            .data_out(data_out)
-        );
+        .MAX_TAU(MAX_TAU),
+        .THRESHOLD(THRESHOLD),
+    ) min_tau_mod (
+        .clk(clk),
+        .reset(reset),
+        .ready(ready),
+        .min_tau(result),
+        .data()
+    );
 
 
 
