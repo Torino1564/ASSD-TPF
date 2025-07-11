@@ -8,10 +8,11 @@ module min_tau_module #(
     input wire clk,
     input wire reset,
     output reg ready,
-    input wire [DATA_WIDTH*(2**WINDOW_SIZE_BITS + MAX_TAU)-1:0] data,
+    input wire [DATA_WIDTH-1:0] data [(2**WINDOW_SIZE_BITS + MAX_TAU)],
     output reg [7:0] min_tau
 );
     wire [INTERMEDIATE_DATA_WIDTH-1:0] dt_prima [MAX_TAU];
+    reg [INTERMEDIATE_DATA_WIDTH-1:0] current;
 
     reg reset_modiff = 1;
     wire ready_modiff;
@@ -105,6 +106,7 @@ module min_tau_module #(
                 end
             end
             ITERATING: begin
+                current <= dt_prima[tau_index];
                 if (dt_prima[tau_index] < threshold) begin
                     min_tau <= tau_index;
                     new_state <= DONE;

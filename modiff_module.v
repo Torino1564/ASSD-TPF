@@ -7,7 +7,7 @@ module modiff_module
 ) (
     input wire clk,
     input wire reset,
-    input wire [DATA_WIDTH*(2**WINDOW_SIZE_BITS + MAX_TAU)-1:0] data,
+    input wire [DATA_WIDTH-1:0] data [2**WINDOW_SIZE_BITS + MAX_TAU],
     output reg ready,
     output reg [INTERMEDIATE_DATA_WIDTH-1:0] results [MAX_TAU],
     output reg [INTERMEDIATE_DATA_WIDTH-1:0] average

@@ -5,15 +5,15 @@ module diff_module #(
     parameter MAX_TAU = 40 // representa 20ms
 ) (
     input clk,
-    input wire [DATA_WIDTH*((2**WINDOW_SIZE_BITS) + MAX_TAU)-1:0] data_in,
+    input wire [DATA_WIDTH-1:0] data_in [2**WINDOW_SIZE_BITS + MAX_TAU],
     input wire[5:0] tau,
     input wire reset,
     output reg ready,
     output reg [INTERMEDIATE_DATA_WIDTH-1:0] accumulator
 );
     // índice en la sumatoria
-    reg [WINDOW_SIZE_BITS-1:0] sum_index = 0;
-    reg [WINDOW_SIZE_BITS-1:0] new_sum_index = 0;
+    reg [WINDOW_SIZE_BITS:0] sum_index = 0;
+    reg [WINDOW_SIZE_BITS:0] new_sum_index = 0;
 
     // flipflop registers
     reg [DATA_WIDTH-1:0] xj = 0;
@@ -45,8 +45,8 @@ module diff_module #(
         new_ready           = ready;
 
         if (~ready) begin
-            xj = data_in[DATA_WIDTH*sum_index+:DATA_WIDTH];
-            xjtau = data_in[DATA_WIDTH*(sum_index+tau)+:DATA_WIDTH];
+            xj = data_in[sum_index];
+            xjtau = data_in[sum_index + tau];
             
             // Aca ya tengo xj y xjtau
             if (xj < xjtau) begin

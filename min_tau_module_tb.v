@@ -4,7 +4,7 @@ module min_tau_module_tb;
 
     parameter DATA_WIDTH_BITS = 8;
     parameter WINDOW_SIZE_BITS = 8; // 256 muestras (reducido para test rápido)
-    parameter BUFFER_SIZE = 1 << (WINDOW_SIZE_BITS + 1);
+    parameter BUFFER_SIZE = 2 ** (WINDOW_SIZE_BITS + 1);
     parameter FS = 2000;
     parameter MAX_TAU = 40; // representa 20ms
     parameter INTERMEDIATE_DATA_WIDTH = 64;
@@ -20,11 +20,11 @@ module min_tau_module_tb;
     // Memoria simulada con BUFFER_SIZE entradas
     reg [DATA_WIDTH_BITS-1:0] memory [0:2*BUFFER_SIZE-1];
 
-    wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
+    wire [DATA_WIDTH_BITS-1:0] partition [(2**WINDOW_SIZE_BITS) + MAX_TAU];
     genvar i;
     generate
-        for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
-            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i + buffer_offset];
+        for (i = 0; i < (2**WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : partition_loop
+            assign partition[i] = memory[i + buffer_offset];
         end
     endgenerate
 
@@ -41,14 +41,14 @@ module min_tau_module_tb;
         .clk(clk),
         .reset(reset),
         .ready(ready),
-        .data(flat),
+        .data(partition),
         .min_tau(min_tau)
     );
 
     integer k;
     real value;
     initial begin
-        buffer_offset = 5'd10;
+        buffer_offset = 5'd0;
         // Inicializo memoria con una onda seno escalada entre 0 y 255
         for (k = 0; k < 2*BUFFER_SIZE; k = k + 1) begin
             // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
@@ -61,8 +61,8 @@ module min_tau_module_tb;
     reg [DATA_WIDTH_BITS-1:0] mem_out = 0;
     integer j;
     initial begin
-        for (j = 0; j < 2*BUFFER_SIZE; j = j + 1) begin
-            #20 mem_out = memory[j];
+        for (j = 0; j < (2**WINDOW_SIZE_BITS) + MAX_TAU; j = j + 1) begin
+            #20 mem_out = partition[j];
         end
     end
 
