@@ -1,8 +1,8 @@
 module buffer_module
 #(
-    parameter ADDRESS_WIDTH = 4,
     parameter DATA_WIDTH = 16,
-    parameter DEPTH = 16
+    parameter DEPTH = 16,
+    parameter ADDRESS_WIDTH = $clog2(DEPTH)
 )
 (
     input wire clk,

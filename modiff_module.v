@@ -7,9 +7,9 @@ module modiff_module
 ) (
     input wire clk,
     input wire reset,
-    input wire [DATA_WIDTH-1:0] data [2**WINDOW_SIZE_BITS + MAX_TAU],
+    input wire [(2**WINDOW_SIZE_BITS + MAX_TAU)*DATA_WIDTH-1:0] data,
     output reg ready,
-    output reg [INTERMEDIATE_DATA_WIDTH-1:0] results [MAX_TAU],
+    output reg [MAX_TAU*INTERMEDIATE_DATA_WIDTH-1:0] results,
     output reg [INTERMEDIATE_DATA_WIDTH-1:0] average
 );
 
@@ -146,7 +146,7 @@ always @(*) begin
                     if (div_ready) begin
                         new_average <= div_result;
                         new_dividing <= 0;
-                        results[0] <= div_result << 1;
+                        results[0+:INTERMEDIATE_DATA_WIDTH] <= div_result << 1;
                         new_calculated_average <= 1;
                     end
                 end
@@ -162,8 +162,8 @@ always @(*) begin
         else begin
             if (div_reset) div_reset <= 0;
             if (div_ready) begin
-                results[sum_index] <= div_result;
-                current_result <= results[sum_index];
+                results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] <= div_result;
+                current_result <= results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
                 new_dividing <= 0;
                 new_sum_index <= sum_index + 1;
             end

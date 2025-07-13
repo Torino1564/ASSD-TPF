@@ -1,23 +1,40 @@
-
 module top (
-    // ports
-    // input wire [DATA_WIDTH_BITS-1:0] audio,
-    // input wire data_ready
+    // audio
+    input wire gpio_11,     //  din_0
+    input wire gpio_18,     //  din_1
+    input wire gpio_19,     //  din_2
+    input wire gpio_13,     //  din_3
+    input wire gpio_21,     //  din_4
+    input wire gpio_12,     //  din_5
+    input wire gpio_10,     //  din_6
+    input wire gpio_20,     //  din_7
+    input wire gpio_6,      //  EOC
+
+    // display
+    output wire gpio_2,     //  display clock 
+    output wire gpio_46,    //  data enable
+    output wire gpio_47,    //  data in
+    output wire gpio_45,    //  serial clock
+    output wire gpio_48     //  clear
 );
     `include "constants.vh" 
     wire clk;
 
+    localparam ADDRESS_WIDTH = $clog2(BUFFER_SIZE);
+
     SB_HFOSC HFOSC_mod(.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clk));
     //defparam HFOSC_mod.CLKHF_DIV = "0b00";
 
-    reg [BUFFER_SIZE_BITS-1:0] address;
+    reg [ADDRESS_WIDTH-1:0] address;
+    reg [ADDRESS_WIDTH-1:0] new_address;
     reg [DATA_WIDTH_BITS-1:0] data_in;
     wire [DATA_WIDTH_BITS-1:0] data_out;
     reg write = 1;
     reg oe = 1;
+    assign gpio_48 = 0;
 
     // ram module
-    buffer_module #(.DEPTH(2 ** BUFFER_SIZE_BITS), .ADDRESS_WIDTH(BUFFER_SIZE_BITS), .DATA_WIDTH(DATA_WIDTH_BITS)) buffer_dut(
+    buffer_module #(.DEPTH(2*PASS_BUFFER_SIZE), .DATA_WIDTH(DATA_WIDTH_BITS)) buffer_dut (
         .clk(clk),
         .address(address),
         .data_in(data_in),
@@ -26,38 +43,125 @@ module top (
         .operational_clock(1'b1),
         .write(write)
     );
+    wire reset;
+    wire min_tau_ready;
+    reg min_tau_reset;
+    wire [7:0] min_tau_result;
+    reg [7:0] tau;
 
-    wire ready;
-    reg reset;
-    wire [BUFFER_SIZE_BITS-1:0] diff_address;
-    wire [7:0] result;
+    // display module
+    display_module #(.WORDS(4)) display_mod (
+        .VALUE_BCD({4'd1, 4'd2, 4'd3, 4'd4}),
+        .internal_clock(clk),
+        .VALUE_SIGNAL(gpio_47),
+        .ENABLE_SIGNAL(gpio_46),
+        .BOARD_CLOCK_SIGNAL(gpio_2),
+        .DATA_CLOCK_SIGNAL(gpio_45)
+    );
 
-    always @(posedge clk)
-        address <= diff_address;
-
-    // Flatten address
-    wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
-    genvar i;
-    generate
-        for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
-            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i + buffer_offset];
-        end
-    endgenerate
+    // double buffering
+    reg [PASS_BUFFER_SIZE*DATA_WIDTH_BITS-1:0] memory_partition;
 
     min_tau_module #(
         .DATA_WIDTH(DATA_WIDTH_BITS),
         .INTERMEDIATE_DATA_WIDTH(64),
         .WINDOW_SIZE_BITS(WINDOW_SIZE_BITS),
         .MAX_TAU(MAX_TAU),
-        .THRESHOLD(THRESHOLD),
+        .THRESHOLD(THRESHOLD)
     ) min_tau_mod (
         .clk(clk),
-        .reset(reset),
-        .ready(ready),
-        .min_tau(result),
-        .data()
+        .reset(min_tau_reset),
+        .ready(min_tau_ready),
+        .min_tau(min_tau_result),
+        .data(memory_partition)
     );
 
+    reg [7:0] state;
+    reg [7:0] new_state;
+
+    reg current_buffer;
+    reg new_current_buffer;
+
+    reg [ADDRESS_WIDTH-1:0] fill_index;
+    reg [ADDRESS_WIDTH-1:0] new_fill_index;
+
+    localparam IDLE = 0;
+    localparam SWITCH = 1;
+    localparam COPYING_DATA = 2;
+    localparam WAITING_PROCESSING = 3;
+
+    always @(posedge clk) begin
+        if (~reset) begin
+            state <= new_state;
+            address <= new_address;
+            first <= new_first;
+        end
+        else begin
+            state <= 0;
+            address <= 0;
+            first <= 0;
+        end
+    end
+
+    reg set_address;
+    reg new_set_address;
+
+    reg [ADDRESS_WIDTH-1:0] initial_address;
+    reg [ADDRESS_WIDTH-1:0] copy_index;
+    reg [ADDRESS_WIDTH-1:0] new_copy_index;
+    reg new_first;
+    reg first;
+
+    always @(*) begin
+        new_state <= state;
+        new_set_address <= set_address;
+        new_first <= first;
+
+        case (state)
+        IDLE: begin
+        end
+        SWITCH: begin
+            // Set to process the new data
+            if (current_buffer == 0) begin
+                new_current_buffer <= 1;
+                initial_address <= BUFFER_SIZE / 2;
+            end
+            else begin
+                new_current_buffer <= 0;
+                initial_address <= 0;
+            end
+            new_copy_index <= 0;
+            new_state <= COPYING_DATA;
+            new_first <= 1;
+        end
+        COPYING_DATA: begin
+            if (first) begin
+                new_first <= 0;
+                new_address <= initial_address + copy_index;
+            end
+            else begin
+                new_address <= initial_address + copy_index;
+                new_copy_index <= copy_index + 1;
+                if (copy_index == BUFFER_SIZE) begin
+                    min_tau_reset <= 1;
+                    new_state <= WAITING_PROCESSING;
+                end
+                else begin
+                    memory_partition[copy_index*DATA_WIDTH_BITS+:DATA_WIDTH_BITS] <= data_out;
+                end
+            end
+        end
+        WAITING_PROCESSING: begin
+            min_tau_reset <= 0;
+            if (min_tau_ready) begin
+                if (min_tau_result != 0) begin
+                    tau <= min_tau_result;
+                end
+                new_state <= SWITCH;
+            end
+        end
+        endcase 
+    end
 
 
 endmodule

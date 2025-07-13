@@ -1,0 +1,3 @@
+read_verilog -sv -nolatches -defer top.s
+synth_ice40 -top top
+write_json hardware.json

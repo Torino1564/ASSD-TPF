@@ -5,7 +5,7 @@ module diff_module #(
     parameter MAX_TAU = 40 // representa 20ms
 ) (
     input clk,
-    input wire [DATA_WIDTH-1:0] data_in [2**WINDOW_SIZE_BITS + MAX_TAU],
+    input wire [(2**WINDOW_SIZE_BITS + MAX_TAU)*DATA_WIDTH-1:0] data_in,
     input wire[5:0] tau,
     input wire reset,
     output reg ready,
@@ -45,8 +45,8 @@ module diff_module #(
         new_ready           = ready;
 
         if (~ready) begin
-            xj = data_in[sum_index];
-            xjtau = data_in[sum_index + tau];
+            xj = data_in[sum_index*DATA_WIDTH+:DATA_WIDTH];
+            xjtau = data_in[(sum_index+tau)*DATA_WIDTH+:DATA_WIDTH];
             
             // Aca ya tengo xj y xjtau
             if (xj < xjtau) begin
