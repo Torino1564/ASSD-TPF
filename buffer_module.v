@@ -29,6 +29,7 @@ always @(posedge clk) begin
     end
 end
 
-assign data_out = operational_clock & output_enable & !write ? temp_data : 'hz;
+// Should change to highZ
+assign data_out = operational_clock & output_enable & !write ? temp_data : 0;
     
 endmodule

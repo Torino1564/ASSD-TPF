@@ -84,7 +84,8 @@ module min_tau_module #(
     always @(*) begin
         new_state <= state;
         new_tau_index <= tau_index;
-
+        new_ready <= ready;
+        
         case (state)
             IDLE: begin
                 if (ready_modiff) begin

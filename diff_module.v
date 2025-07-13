@@ -6,7 +6,7 @@ module diff_module #(
 ) (
     input clk,
     input wire [(2**WINDOW_SIZE_BITS + MAX_TAU)*DATA_WIDTH-1:0] data_in,
-    input wire[5:0] tau,
+    input wire [5:0] tau,
     input wire reset,
     output reg ready,
     output reg [INTERMEDIATE_DATA_WIDTH-1:0] accumulator

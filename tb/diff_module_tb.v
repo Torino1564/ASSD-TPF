@@ -24,15 +24,15 @@ module diff_module_tb;
     reg [DATA_WIDTH_BITS-1:0] data_out = 0;
 
     // Resultado de la funcion de diferencias
-    reg [38:0] resultados [MAX_TAU];
-    wire [38:0] resultado_diferencias;
-    wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
-    genvar i;
-    generate
-        for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
-            assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i];
-        end
-    endgenerate
+    // reg [38:0] resultados [MAX_TAU];
+    // wire [38:0] resultado_diferencias;
+    // wire [((1<<WINDOW_SIZE_BITS)+MAX_TAU)*DATA_WIDTH_BITS-1:0] flat;
+    // genvar i;
+    // generate
+    //     for (i = 0; i < (1<<WINDOW_SIZE_BITS)+MAX_TAU; i = i + 1) begin : flatten_loop
+    //         assign flat[(i+1)*DATA_WIDTH_BITS-1 -: DATA_WIDTH_BITS] = memory[i];
+    //     end
+    // endgenerate
 
     // Instancia del módulo
     diff_module #(

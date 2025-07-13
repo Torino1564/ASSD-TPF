@@ -1,41 +1,24 @@
-module top (
-    // audio
-    input wire gpio_11,     //  din_0
-    input wire gpio_18,     //  din_1
-    input wire gpio_19,     //  din_2
-    input wire gpio_13,     //  din_3
-    input wire gpio_21,     //  din_4
-    input wire gpio_12,     //  din_5
-    input wire gpio_10,     //  din_6
-    input wire gpio_20,     //  din_7
-    input wire gpio_6,      //  EOC
+`timescale 1ns/100ps
 
-    // display
-    output wire gpio_2,     //  display clock 
-    output wire gpio_46,    //  data enable
-    output wire gpio_47,    //  data in
-    output wire gpio_45,    //  serial clock
-    output wire gpio_48     //  clear
-);
-    `include "constants.vh" 
-    wire clk;
-    wire eoc;
-    wire [DATA_WIDTH_BITS-1:0] audio;
-    assign audio[0] = gpio_11;
-    assign audio[1] = gpio_18;
-    assign audio[2] = gpio_19;
-    assign audio[3] = gpio_13;
-    assign audio[4] = gpio_21;
-    assign audio[5] = gpio_12;
-    assign audio[6] = gpio_10;
-    assign audio[7] = gpio_20;
+module top_tb;
+    // audio
+
+    parameter DATA_WIDTH_BITS = 8;
+    parameter MAX_TAU = 40;
+    parameter THRESHOLD = 1;
+    parameter WINDOW_SIZE_BITS = 6; // W = 256 
+    parameter PASS_BUFFER_SIZE = 2 ** WINDOW_SIZE_BITS + MAX_TAU;
+    parameter BUFFER_SIZE = 2 * PASS_BUFFER_SIZE;
+
+    reg clk = 1;
+    reg eoc;
+    reg [DATA_WIDTH_BITS-1:0] audio;
     
-    assign eoc = gpio_6;
 
     localparam ADDRESS_WIDTH = $clog2(BUFFER_SIZE);
 
-    SB_HFOSC HFOSC_mod(.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clk));
-    //defparam HFOSC_mod.CLKHF_DIV = "0b00";
+    always
+        #10 clk = ~clk;
 
     reg [ADDRESS_WIDTH-1:0] address;
     reg [ADDRESS_WIDTH-1:0] new_address;
@@ -55,24 +38,13 @@ module top (
         .operational_clock(1'b1),
         .write(write)
     );
-    wire reset;
+    reg reset;
     wire min_tau_ready;
     reg min_tau_reset;
     reg new_min_tau_reset;
     wire [7:0] min_tau_result;
     reg [7:0] tau;
     reg [7:0] new_tau;
-    assign reset = 0;
-
-    // display module
-    display_module #(.WORDS(4)) display_mod (
-        .VALUE_BCD({8'd0, tau}),
-        .internal_clock(clk),
-        .VALUE_SIGNAL(gpio_47),
-        .ENABLE_SIGNAL(gpio_46),
-        .BOARD_CLOCK_SIGNAL(gpio_2),
-        .DATA_CLOCK_SIGNAL(gpio_45)
-    );
 
     // double buffering
     reg [PASS_BUFFER_SIZE*DATA_WIDTH_BITS-1:0] memory_partition;
@@ -101,14 +73,13 @@ module top (
     reg [ADDRESS_WIDTH-1:0] fill_index;
     reg [ADDRESS_WIDTH-1:0] new_fill_index;
 
-    localparam IDLE = 0;
     localparam SWITCH = 1;
     localparam COPYING_DATA = 2;
     localparam WAITING_PROCESSING = 3;
     localparam WAITING_DATA = 4;
 
     always @(posedge clk) begin
-        if (~reset) begin
+        if (reset == 0) begin
             state <= new_state;
             address <= new_address;
             first <= new_first;
@@ -119,10 +90,11 @@ module top (
             min_tau_reset <= new_min_tau_reset;
             initial_address <= new_initial_address;
             memory_partition <= new_memory_partition;
+            dont_add_multiple_times <= new_dont_add_multiple_times;
         end
         else begin
             memory_partition <= 0;
-            state <= 0;
+            state <= WAITING_DATA;
             address <= 0;
             first <= 0;
             fill_index <= 0;
@@ -131,6 +103,7 @@ module top (
             tau <= 0;
             min_tau_reset <= 0;
             initial_address <= 0;
+            dont_add_multiple_times <= 0;
         end
     end
 
@@ -144,6 +117,9 @@ module top (
     reg new_first;
     reg first;
 
+    reg dont_add_multiple_times;
+    reg new_dont_add_multiple_times;
+
     always @(*) begin
         new_state <= state;
         new_set_address <= set_address;
@@ -155,8 +131,10 @@ module top (
         new_min_tau_reset <= min_tau_reset;
         new_initial_address <= initial_address;
         new_memory_partition <= memory_partition;
+        new_dont_add_multiple_times <= dont_add_multiple_times;
 
-        if (eoc == 1) begin
+        if (eoc == 1 & ~dont_add_multiple_times) begin
+            new_dont_add_multiple_times <= 1;
             if (current_buffer == 1) begin
                 new_address <= fill_index;
                 new_fill_index <= fill_index + 1;
@@ -168,9 +146,9 @@ module top (
             data_in <= audio;
         end
         else begin
+            if (eoc == 0)
+                new_dont_add_multiple_times <= 0;
             case (state)
-            IDLE: begin
-            end
             SWITCH: begin
                 // Set to process the new data
                 if (current_buffer == 0) begin
@@ -229,6 +207,40 @@ module top (
             endcase
         end
     end
+integer k;
+initial begin
+        // Dump de la simulación
+        k = 0;
+        reset = 1;
+        $dumpfile("waveform.vcd");
+        $dumpvars(0, top_tb);
+        #100 reset = 0;
+        
+        #256000000 $finish;
+    end
 
+parameter FREQ = 100;
+reg [DATA_WIDTH_BITS-1:0] sin [200];
+integer i;
+real value;
+initial begin
+        // Inicializo memoria con una onda seno escalada entre 0 y 255
+        for (i = 0; i < 200; i = i + 1) begin
+            // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
+            value = $sin(2.0 * FREQ * 3.14159265 * i / 2000);
+            // Escalar a rango 0–255 para 8 bits sin signo
+            sin[i] = $rtoi((value + 1.0) * 127.5);
+        end
+    end
+
+always begin
+        #250000 eoc = 1;
+        k = k + 1;
+        if (k >= 200) begin
+            k = 0;
+        end
+        #1 audio = sin[k];
+        #250000 eoc = 0;
+    end
 
 endmodule

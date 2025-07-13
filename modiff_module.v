@@ -138,11 +138,11 @@ always @(*) begin
                 if (!dividing) begin
                     dividendo <= total_sum;
                     divisor <= MAX_TAU;
-                    div_reset <= 1;
+                    new_div_reset <= 1;
                     new_dividing <= 1;
                 end
                 else begin
-                    if (div_reset) div_reset <= 0;
+                    if (div_reset) new_div_reset <= 0;
                     if (div_ready) begin
                         new_average <= div_result;
                         new_dividing <= 0;
@@ -157,10 +157,10 @@ always @(*) begin
             dividendo <= (current * average) * sum_index;
             divisor <= accumulator + current;
             new_accumulator <= accumulator + current;
-            div_reset <= 1;
+            new_div_reset <= 1;
         end
         else begin
-            if (div_reset) div_reset <= 0;
+            if (div_reset) new_div_reset <= 0;
             if (div_ready) begin
                 results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] <= div_result;
                 current_result <= results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];

@@ -50,6 +50,10 @@ module sar_divisor_module #(
         new_current_follower <= current_follower;
 
         if (!ready) begin
+            if (dividendo == 0 || divisor == 0) begin
+                new_result <= 0;
+                new_ready <= 1;
+            end
             diff <= dividendo >= follower ? dividendo - follower : divisor + 1;
             if (diff < divisor) begin
                 new_ready <= 1;
