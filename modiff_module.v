@@ -15,12 +15,12 @@ module modiff_module
 
 wire [INTERMEDIATE_DATA_WIDTH-1:0] diff_results [MAX_TAU];
 wire diff_ready;
-reg [MAX_TAU-1:0] diff_reset = 0;
+reg diff_reset = 0;
 
 diff_module #(.DATA_WIDTH(DATA_WIDTH), .WINDOW_SIZE_BITS(WINDOW_SIZE_BITS), .MAX_TAU(MAX_TAU)) diff_tau (
             .clk(clk),
             .tau(6'b0),
-            .reset(diff_reset[0]),
+            .reset(diff_reset),
             .ready(diff_ready),
             .data_in(data),
             .accumulator(diff_results[0])
@@ -33,7 +33,7 @@ generate
         diff_module #(.DATA_WIDTH(DATA_WIDTH), .WINDOW_SIZE_BITS(WINDOW_SIZE_BITS), .MAX_TAU(MAX_TAU)) diff_tau (
             .clk(clk),
             .tau(tau[5:0]),
-            .reset(diff_reset[tau]),
+            .reset(diff_reset),
             .ready(ready_bit),
             .data_in(data),
             .accumulator(diff_results[tau])
@@ -67,8 +67,7 @@ reg                                                 new_ready;
 
 always @(posedge clk) begin
     if (reset) begin
-        diff_reset = 0;
-        diff_reset = ~diff_reset;
+        diff_reset <= 1;
         sum_index <= 1;
         accumulator <= 0;
         ready <= 0;
@@ -78,8 +77,10 @@ always @(posedge clk) begin
         calculated_total_sum <= 0;
         calculated_average <= 0;
         average <= 0;
+        first <= 1;
     end
     else begin
+        first <= new_first;
         diff_reset <= 0;
         sum_index <= new_sum_index;
         accumulator <= new_accumulator;
@@ -95,6 +96,8 @@ end
 
 reg dividing = 0;
 reg new_dividing = 0;
+reg first;
+reg new_first;
 
 reg [INTERMEDIATE_DATA_WIDTH-1:0] current = 0;
 reg [INTERMEDIATE_DATA_WIDTH-1:0] current_result = 0;
@@ -120,8 +123,9 @@ always @(*) begin
     new_calculated_total_sum <= calculated_total_sum;
     new_calculated_average <= calculated_average;
     new_average <= average;
-
-    if (diff_ready & ~ready) begin
+    if (first)
+        new_first <= 0;
+    if (diff_ready & ~reset & ~ready & ~first) begin
         // begin processing modified dtau
         current = diff_results[sum_index];
         if (!calculated_average) begin

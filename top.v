@@ -108,9 +108,9 @@ module top (
     localparam WAITING_DATA = 4;
 
     always @(posedge clk) begin
-        if (~reset) begin
+        if (reset == 0) begin
             state <= new_state;
-            address <= new_address;
+            //address <= new_address;
             first <= new_first;
             fill_index <= new_fill_index;
             copy_index <= new_copy_index;
@@ -119,23 +119,22 @@ module top (
             min_tau_reset <= new_min_tau_reset;
             initial_address <= new_initial_address;
             memory_partition <= new_memory_partition;
+            dont_add_multiple_times <= new_dont_add_multiple_times;
         end
         else begin
             memory_partition <= 0;
-            state <= 0;
-            address <= 0;
+            state <= WAITING_DATA;
+            //address <= 0;
             first <= 0;
             fill_index <= 0;
             copy_index <= 0;
-            current_buffer <= 0;
+            current_buffer <= 1;
             tau <= 0;
             min_tau_reset <= 0;
             initial_address <= 0;
+            dont_add_multiple_times <= 0;
         end
     end
-
-    reg set_address;
-    reg new_set_address;
 
     reg [ADDRESS_WIDTH-1:0] initial_address;
     reg [ADDRESS_WIDTH-1:0] new_initial_address;
@@ -144,9 +143,11 @@ module top (
     reg new_first;
     reg first;
 
+    reg dont_add_multiple_times;
+    reg new_dont_add_multiple_times;
+
     always @(*) begin
         new_state <= state;
-        new_set_address <= set_address;
         new_first <= first;
         new_fill_index <= fill_index;
         new_copy_index <= copy_index;
@@ -155,33 +156,37 @@ module top (
         new_min_tau_reset <= min_tau_reset;
         new_initial_address <= initial_address;
         new_memory_partition <= memory_partition;
+        new_dont_add_multiple_times <= dont_add_multiple_times;
 
-        if (eoc == 1) begin
+        if (eoc == 1 & ~dont_add_multiple_times) begin
+            new_dont_add_multiple_times <= 1;
+            data_in <= audio;
+            write <= 1;
             if (current_buffer == 1) begin
-                new_address <= fill_index;
+                address <= fill_index;
                 new_fill_index <= fill_index + 1;
             end
             else begin
-                new_address <= BUFFER_SIZE / 2 + fill_index;
+                address <= BUFFER_SIZE / 2 + fill_index;
                 new_fill_index <= fill_index + 1;
             end
-            data_in <= audio;
         end
         else begin
+            write <= 0;
+            if (eoc == 0)
+                new_dont_add_multiple_times <= 0;
             case (state)
-            IDLE: begin
-            end
             SWITCH: begin
                 // Set to process the new data
                 if (current_buffer == 0) begin
                     new_current_buffer <= 1;
-                    new_initial_address <= BUFFER_SIZE / 2;
+                    new_initial_address <= BUFFER_SIZE / 2 - 1;
                     new_fill_index <= 0;
                 end
                 else begin
                     new_current_buffer <= 0;
                     new_initial_address <= 0;
-                    new_fill_index <= BUFFER_SIZE / 2;
+                    new_fill_index <= BUFFER_SIZE / 2 - 1;
                 end
                 new_copy_index <= 0;
                 new_state <= COPYING_DATA;
@@ -190,24 +195,26 @@ module top (
             COPYING_DATA: begin
                 if (first) begin
                     new_first <= 0;
-                    new_address <= initial_address + copy_index;
+                    address <= initial_address + copy_index;
+                    new_copy_index <= copy_index + 1;
                 end
                 else begin
-                    new_address <= initial_address + copy_index;
-                    if (copy_index == BUFFER_SIZE) begin
+                    address <= initial_address + copy_index;
+                    if (copy_index == PASS_BUFFER_SIZE + 1) begin
                         new_min_tau_reset <= 1;
                         new_state <= WAITING_PROCESSING;
                         new_copy_index <= 0;
                     end
                     else begin
-                        new_memory_partition[copy_index*DATA_WIDTH_BITS+:DATA_WIDTH_BITS] <= data_out;
+                        new_memory_partition[(copy_index-1)*DATA_WIDTH_BITS+:DATA_WIDTH_BITS] <= data_out;
                         new_copy_index <= copy_index + 1;
                     end
                 end
             end
             WAITING_PROCESSING: begin
-                new_min_tau_reset <= 0;
-                if (min_tau_ready) begin
+                if (min_tau_reset == 1)
+                    new_min_tau_reset <= 0;
+                else if (min_tau_ready) begin
                     //if (min_tau_result != 0) begin
                         new_tau <= min_tau_result;
                     //end
@@ -216,12 +223,12 @@ module top (
             end
             WAITING_DATA: begin
                 if (current_buffer == 0) begin
-                    if (fill_index == BUFFER_SIZE - 1) begin
+                    if (fill_index == BUFFER_SIZE) begin
                        new_state <= SWITCH; 
                     end
                 end
                 else begin
-                    if (fill_index == BUFFER_SIZE/2 - 1) begin
+                    if (fill_index == BUFFER_SIZE/2) begin
                         new_state <= SWITCH;
                     end
                 end
@@ -229,6 +236,4 @@ module top (
             endcase
         end
     end
-
-
 endmodule

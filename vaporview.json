@@ -3,22 +3,59 @@
   "fileName": "d:\\dev\\ASSD-TPF\\waveform.vcd",
   "markerTime": null,
   "altMarkerTime": null,
-  "selectedSignal": null,
-  "zoomRatio": 0.0064,
-  "scrollLeft": 404597.00320000004,
+  "selectedSignal": {
+    "name": "top_tb.min_tau_mod.modiff_mod.calculated_total_sum",
+    "numberFormat": "hexadecimal",
+    "msb": -1,
+    "lsb": -1
+  },
+  "zoomRatio": 0.39269725051600674,
+  "scrollLeft": 20139380.993266366,
   "displayedSignals": [
     {
-      "netlistId": 14,
-      "name": "modiff_module_tb.k",
-      "numberFormat": "decimal",
+      "netlistId": 44,
+      "name": "top_tb.state",
+      "numberFormat": "hexadecimal",
       "colorIndex": 0,
       "renderType": "multiBit",
       "valueLinkCommand": ""
     },
     {
-      "netlistId": 10,
-      "name": "modiff_module_tb.dt_prima_out",
-      "numberFormat": "decimal",
+      "netlistId": 134,
+      "name": "top_tb.min_tau_mod.modiff_mod.dividing",
+      "numberFormat": "binary",
+      "colorIndex": 0,
+      "renderType": "binary",
+      "valueLinkCommand": ""
+    },
+    {
+      "netlistId": 128,
+      "name": "top_tb.min_tau_mod.modiff_mod.calculated_total_sum",
+      "numberFormat": "binary",
+      "colorIndex": 0,
+      "renderType": "binary",
+      "valueLinkCommand": ""
+    },
+    {
+      "netlistId": 884,
+      "name": "top_tb.min_tau_mod.modiff_mod.diff_module[39].diff_tau.accumulator",
+      "numberFormat": "hexadecimal",
+      "colorIndex": 0,
+      "renderType": "multiBit",
+      "valueLinkCommand": ""
+    },
+    {
+      "netlistId": 891,
+      "name": "top_tb.min_tau_mod.modiff_mod.diff_module[39].diff_tau.xj",
+      "numberFormat": "hexadecimal",
+      "colorIndex": 0,
+      "renderType": "multiBit",
+      "valueLinkCommand": ""
+    },
+    {
+      "netlistId": 892,
+      "name": "top_tb.min_tau_mod.modiff_mod.diff_module[39].diff_tau.xjtau",
+      "numberFormat": "hexadecimal",
       "colorIndex": 0,
       "renderType": "multiBit",
       "valueLinkCommand": ""

@@ -18,6 +18,9 @@ module min_tau_module #(
     wire ready_modiff;
     wire [INTERMEDIATE_DATA_WIDTH-1:0] modiff_average;
 
+    reg first;
+    reg new_first;
+
     // Crear el modulo de dt':
     modiff_module #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -35,7 +38,7 @@ module min_tau_module #(
 
     reg [INTERMEDIATE_DATA_WIDTH-1:0] divisor;
     reg [INTERMEDIATE_DATA_WIDTH-1:0] dividendo;
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] div_result;
+    wire [INTERMEDIATE_DATA_WIDTH-1:0] div_result;
     reg div_reset;
     wire div_ready;
 
@@ -72,11 +75,13 @@ module min_tau_module #(
             state <= new_state;
             tau_index <= new_tau_index;
             reset_modiff <= 0;
+            first <= new_first;
         end
         else begin
             state <= IDLE;
             ready <= 0;
             reset_modiff <= 1;
+            first <= 1;
         end
     end
 
@@ -85,43 +90,47 @@ module min_tau_module #(
         new_state <= state;
         new_tau_index <= tau_index;
         new_ready <= ready;
-        
-        case (state)
-            IDLE: begin
-                if (ready_modiff) begin
-                    new_state <= FINDING_THRESHOLD;
-                    new_tau_index <= 0;
+        new_first <= first;
+        if (first)
+            new_first <= 0;
+        if (~reset & ~first) begin
+            case (state)
+                IDLE: begin
+                    if (ready_modiff) begin
+                        new_state <= FINDING_THRESHOLD;
+                        new_tau_index <= 0;
+                    end
                 end
-            end
-            FINDING_THRESHOLD: begin
-                dividendo <= modiff_average * THRESHOLD;
-                divisor <= 100;
-                div_reset <= 1;
-                new_state <= WAITING_THRESHOLD;
-            end
-            WAITING_THRESHOLD: begin
-                div_reset <= 0;
-                if (div_ready) begin
-                    threshold <= div_result;
-                    new_state <= ITERATING;
+                FINDING_THRESHOLD: begin
+                    dividendo <= modiff_average * THRESHOLD;
+                    divisor <= 100;
+                    div_reset <= 1;
+                    new_state <= WAITING_THRESHOLD;
                 end
-            end
-            ITERATING: begin
-                current <= dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
-                if (dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] < threshold) begin
-                    min_tau <= tau_index;
-                    new_state <= DONE;
+                WAITING_THRESHOLD: begin
+                    div_reset <= 0;
+                    if (div_ready) begin
+                        threshold <= div_result;
+                        new_state <= ITERATING;
+                    end
                 end
-                new_tau_index <= tau_index + 1;
-                if (tau_index == MAX_TAU - 1) begin
-                    min_tau <= 0;
-                    new_state <= DONE;
+                ITERATING: begin
+                    //current <= dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
+                    if (dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] < threshold) begin
+                        min_tau <= tau_index;
+                        new_state <= DONE;
+                    end
+                    new_tau_index <= tau_index + 1;
+                    if (tau_index == MAX_TAU - 1) begin
+                        min_tau <= 0;
+                        new_state <= DONE;
+                    end
                 end
-            end
-            DONE: begin
-                new_ready <= 1;
-            end
-        endcase
+                DONE: begin
+                    new_ready <= 1;
+                end
+            endcase
+        end
     end
     
     

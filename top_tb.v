@@ -99,7 +99,7 @@ module top_tb;
             first <= 0;
             fill_index <= 0;
             copy_index <= 0;
-            current_buffer <= 0;
+            current_buffer <= 1;
             tau <= 0;
             min_tau_reset <= 0;
             initial_address <= 0;
@@ -135,17 +135,19 @@ module top_tb;
 
         if (eoc == 1 & ~dont_add_multiple_times) begin
             new_dont_add_multiple_times <= 1;
+            data_in <= audio;
+            write <= 1;
             if (current_buffer == 1) begin
-                new_address <= fill_index;
+                address <= fill_index;
                 new_fill_index <= fill_index + 1;
             end
             else begin
-                new_address <= BUFFER_SIZE / 2 + fill_index;
+                address <= BUFFER_SIZE / 2 + fill_index;
                 new_fill_index <= fill_index + 1;
             end
-            data_in <= audio;
         end
         else begin
+            write <= 0;
             if (eoc == 0)
                 new_dont_add_multiple_times <= 0;
             case (state)
@@ -153,14 +155,13 @@ module top_tb;
                 // Set to process the new data
                 if (current_buffer == 0) begin
                     new_current_buffer <= 1;
-                    new_initial_address <= BUFFER_SIZE / 2;
-                    new_fill_index <= 0;
+                    new_initial_address <= BUFFER_SIZE / 2 - 1;
                 end
                 else begin
                     new_current_buffer <= 0;
                     new_initial_address <= 0;
-                    new_fill_index <= BUFFER_SIZE / 2;
                 end
+                new_fill_index <= 0;
                 new_copy_index <= 0;
                 new_state <= COPYING_DATA;
                 new_first <= 1;
@@ -168,24 +169,26 @@ module top_tb;
             COPYING_DATA: begin
                 if (first) begin
                     new_first <= 0;
-                    new_address <= initial_address + copy_index;
+                    address <= initial_address + copy_index;
+                    new_copy_index <= copy_index + 1;
                 end
                 else begin
-                    new_address <= initial_address + copy_index;
-                    if (copy_index == BUFFER_SIZE) begin
+                    address <= initial_address + copy_index;
+                    if (copy_index == PASS_BUFFER_SIZE + 1) begin
                         new_min_tau_reset <= 1;
                         new_state <= WAITING_PROCESSING;
                         new_copy_index <= 0;
                     end
                     else begin
-                        new_memory_partition[copy_index*DATA_WIDTH_BITS+:DATA_WIDTH_BITS] <= data_out;
+                        new_memory_partition[(copy_index-1)*DATA_WIDTH_BITS+:DATA_WIDTH_BITS] <= data_out;
                         new_copy_index <= copy_index + 1;
                     end
                 end
             end
             WAITING_PROCESSING: begin
-                new_min_tau_reset <= 0;
-                if (min_tau_ready) begin
+                if (min_tau_reset == 1)
+                    new_min_tau_reset <= 0;
+                else if (min_tau_ready) begin
                     //if (min_tau_result != 0) begin
                         new_tau <= min_tau_result;
                     //end
@@ -193,15 +196,8 @@ module top_tb;
                 end
             end
             WAITING_DATA: begin
-                if (current_buffer == 0) begin
-                    if (fill_index == BUFFER_SIZE - 1) begin
-                       new_state <= SWITCH; 
-                    end
-                end
-                else begin
-                    if (fill_index == BUFFER_SIZE/2 - 1) begin
-                        new_state <= SWITCH;
-                    end
+                if (fill_index == PASS_BUFFER_SIZE) begin
+                    new_state <= SWITCH; 
                 end
             end
             endcase
@@ -216,10 +212,10 @@ initial begin
         $dumpvars(0, top_tb);
         #100 reset = 0;
         
-        #256000000 $finish;
+        #25600000 $finish;
     end
 
-parameter FREQ = 100;
+parameter FREQ = 1000;
 reg [DATA_WIDTH_BITS-1:0] sin [200];
 integer i;
 real value;
@@ -227,20 +223,20 @@ initial begin
         // Inicializo memoria con una onda seno escalada entre 0 y 255
         for (i = 0; i < 200; i = i + 1) begin
             // Valor en radianes (un ciclo completo cada BUFFER_SIZE muestras)
-            value = $sin(2.0 * FREQ * 3.14159265 * i / 2000);
+            value = $sin(2.0 * FREQ * 3.14159265 * i / 20000);
             // Escalar a rango 0–255 para 8 bits sin signo
             sin[i] = $rtoi((value + 1.0) * 127.5);
         end
     end
 
 always begin
-        #250000 eoc = 1;
+        #25000 eoc = 1;
         k = k + 1;
         if (k >= 200) begin
             k = 0;
         end
         #1 audio = sin[k];
-        #250000 eoc = 0;
+        #25000 eoc = 0;
     end
 
 endmodule

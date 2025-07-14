@@ -37,12 +37,12 @@ module diff_module #(
             ready           <= new_ready;
         end
     end
-    reg [DATA_WIDTH-1:0] diff;
+    reg [2*DATA_WIDTH-1:0] diff;
     always @(*) begin
         // Init lhs ff
-        new_sum_index       = sum_index;
-        new_accumulator     = accumulator;
-        new_ready           = ready;
+        new_sum_index       <= sum_index;
+        new_accumulator     <= accumulator;
+        new_ready           <= ready;
 
         if (~ready) begin
             xj = data_in[sum_index*DATA_WIDTH+:DATA_WIDTH];
@@ -57,11 +57,11 @@ module diff_module #(
             end
 
             // guardo y aumento
-            new_accumulator = accumulator + diff*diff;
-            new_sum_index = sum_index + 1;
+            new_accumulator <= accumulator + diff*diff;
+            new_sum_index <= sum_index + 1;
                 
             if (sum_index == (2 ** WINDOW_SIZE_BITS) - 1) begin
-                new_ready = 1'b1;
+                new_ready <= 1'b1;
             end
         end
     end
