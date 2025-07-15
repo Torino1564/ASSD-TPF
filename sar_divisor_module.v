@@ -39,7 +39,8 @@ module sar_divisor_module #(
         end
     end
     reg [BITS-1:0] comparator;
-    reg [BITS-1:0] diff;
+    wire [BITS-1:0] diff;
+    assign diff = dividendo >= follower ? dividendo - follower : divisor + 1;
 
     always @(*) begin
         new_ready <= ready;
@@ -54,18 +55,16 @@ module sar_divisor_module #(
                 new_result <= 0;
                 new_ready <= 1;
             end
-            diff <= dividendo >= follower ? dividendo - follower : divisor + 1;
             if (diff < divisor) begin
                 new_ready <= 1;
             end
             else if (under) begin
-                comparator <= follower + current_follower;
-                if (comparator < dividendo) begin
+                if (follower + current_follower < dividendo) begin
                     new_current_follower <= current_follower << 1;
                     new_current_approximation <= current_approximation << 1;
                 end
                 else begin
-                    new_follower <= comparator;
+                    new_follower <= follower + current_follower;
                     new_result <= result + current_approximation;
                     new_under <= 0;
                     new_current_follower <= divisor;
@@ -73,13 +72,12 @@ module sar_divisor_module #(
                 end
             end
             else if (~under) begin
-                comparator = follower - current_follower;
-                if (comparator > dividendo) begin
+                if (follower - current_follower > dividendo) begin
                     new_current_follower <= current_follower << 1;
                     new_current_approximation <= current_approximation << 1;
                 end
                 else begin
-                    new_follower <= comparator;
+                    new_follower <= follower - current_follower;
                     new_result <= result - current_approximation;
                     new_under <= 1;
                     new_current_follower <= divisor;

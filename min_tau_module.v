@@ -12,6 +12,7 @@ module min_tau_module #(
     output reg [7:0] min_tau
 );
     wire [MAX_TAU*INTERMEDIATE_DATA_WIDTH-1:0] dt_prima;
+    reg [MAX_TAU*INTERMEDIATE_DATA_WIDTH-1:0] current_dt_prima;
     reg [INTERMEDIATE_DATA_WIDTH-1:0] current;
 
     reg reset_modiff = 1;
@@ -20,7 +21,7 @@ module min_tau_module #(
 
     reg first;
     reg new_first;
-
+    reg [7:0] new_min_tau;
     // Crear el modulo de dt':
     modiff_module #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -37,9 +38,12 @@ module min_tau_module #(
     );
 
     reg [INTERMEDIATE_DATA_WIDTH-1:0] divisor;
+    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_divisor;
     reg [INTERMEDIATE_DATA_WIDTH-1:0] dividendo;
+    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_dividendo;
     wire [INTERMEDIATE_DATA_WIDTH-1:0] div_result;
     reg div_reset;
+    reg new_div_reset;
     wire div_ready;
 
     // Modulo de division
@@ -67,6 +71,7 @@ module min_tau_module #(
     localparam SMALLEST_TAU = 5;
 
     reg [INTERMEDIATE_DATA_WIDTH-1:0] threshold;
+    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_threshold;
 
     // Bloque syncronico
     always @(posedge clk ) begin
@@ -76,12 +81,20 @@ module min_tau_module #(
             tau_index <= new_tau_index;
             reset_modiff <= 0;
             first <= new_first;
+            threshold <= new_threshold;
+            divisor <= new_divisor;
+            dividendo <= new_dividendo;
+            min_tau <= new_min_tau;
+            div_reset <= new_div_reset;
+            current_dt_prima <= dt_prima;
         end
         else begin
             state <= IDLE;
             ready <= 0;
             reset_modiff <= 1;
             first <= 1;
+            threshold <= 0;
+            current_dt_prima <= 'd0;
         end
     end
 
@@ -91,6 +104,12 @@ module min_tau_module #(
         new_tau_index <= tau_index;
         new_ready <= ready;
         new_first <= first;
+        new_threshold <= threshold;
+        new_divisor <= divisor;
+        new_dividendo <= dividendo;
+        new_min_tau <= min_tau;
+        new_div_reset <= div_reset;
+
         if (first)
             new_first <= 0;
         if (~reset & ~first) begin
@@ -102,27 +121,26 @@ module min_tau_module #(
                     end
                 end
                 FINDING_THRESHOLD: begin
-                    dividendo <= modiff_average * THRESHOLD;
-                    divisor <= 100;
-                    div_reset <= 1;
+                    new_dividendo <= modiff_average * THRESHOLD;
+                    new_divisor <= 100;
+                    new_div_reset <= 1;
                     new_state <= WAITING_THRESHOLD;
                 end
                 WAITING_THRESHOLD: begin
-                    div_reset <= 0;
-                    if (div_ready) begin
-                        threshold <= div_result;
+                    if (div_reset) new_div_reset <= 0;
+                    else if (div_ready) begin
+                        new_threshold <= div_result;
                         new_state <= ITERATING;
                     end
                 end
                 ITERATING: begin
-                    //current <= dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
                     if (dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] < threshold) begin
-                        min_tau <= tau_index;
+                        new_min_tau <= tau_index;
                         new_state <= DONE;
                     end
                     new_tau_index <= tau_index + 1;
                     if (tau_index == MAX_TAU - 1) begin
-                        min_tau <= 0;
+                        new_min_tau <= 0;
                         new_state <= DONE;
                     end
                 end

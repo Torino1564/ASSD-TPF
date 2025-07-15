@@ -47,7 +47,9 @@ wire div_ready;
 reg div_reset = 0;
 reg new_div_reset = 0;
 reg [DIV_SIZE_BITS-1:0] dividendo;
+reg [DIV_SIZE_BITS-1:0] new_dividendo;
 reg [DIV_SIZE_BITS-1:0] divisor;
+reg [DIV_SIZE_BITS-1:0] new_divisor;
 wire [DIV_SIZE_BITS-1:0] div_result;
 sar_divisor_module #(.BITS(DIV_SIZE_BITS)) sar_divisor_mod (
     .clk(clk),
@@ -78,6 +80,10 @@ always @(posedge clk) begin
         calculated_average <= 0;
         average <= 0;
         first <= 1;
+        total_sum <= 0;
+        total_sum_index <= 0;
+        divisor <= 0;
+        dividendo <= 0;
     end
     else begin
         first <= new_first;
@@ -89,8 +95,11 @@ always @(posedge clk) begin
         div_reset <= new_div_reset;
         calculated_total_sum <= new_calculated_total_sum;
         calculated_average <= new_calculated_average;
-        total_sum <= total_sum_comb;
+        total_sum <= new_total_sum;
+        total_sum_index <= new_total_sum_index;
         average <= new_average;
+        divisor <= new_divisor;
+        dividendo <= new_dividendo;
     end
 end
 
@@ -108,9 +117,13 @@ reg calculated_average;
 reg new_calculated_average;
 
 reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum;
-reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum_comb;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] new_total_sum;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] total_sum_index;
+reg [INTERMEDIATE_DATA_WIDTH-1:0] new_total_sum_index;
 
 reg [INTERMEDIATE_DATA_WIDTH-1:0] new_average;
+
+
 
 integer i;
 
@@ -123,31 +136,37 @@ always @(*) begin
     new_calculated_total_sum <= calculated_total_sum;
     new_calculated_average <= calculated_average;
     new_average <= average;
+    new_total_sum <= total_sum;
+    new_total_sum_index <= total_sum_index;
+    new_divisor <= divisor;
+    new_dividendo <= dividendo;
+
     if (first)
         new_first <= 0;
     if (diff_ready & ~reset & ~ready & ~first) begin
         // begin processing modified dtau
-        current = diff_results[sum_index];
         if (!calculated_average) begin
             if (!calculated_total_sum) begin
                 // Accumulation
-                total_sum_comb = 'd0;
-                for (i = 0; i < MAX_TAU; i = i + 1) begin
-                    total_sum_comb = total_sum_comb + diff_results[i];
+                if (total_sum_index == MAX_TAU) begin
+                    new_calculated_total_sum <= 1;
                 end
-                new_calculated_total_sum <= 1;
+                else begin
+                    new_total_sum <= total_sum + diff_results[total_sum_index];
+                    new_total_sum_index <= total_sum_index + 1;
+                end
             end
             else begin
                 // Average
                 if (!dividing) begin
-                    dividendo <= total_sum;
-                    divisor <= MAX_TAU;
+                    new_dividendo <= total_sum;
+                    new_divisor <= MAX_TAU;
                     new_div_reset <= 1;
                     new_dividing <= 1;
                 end
                 else begin
                     if (div_reset) new_div_reset <= 0;
-                    if (div_ready) begin
+                    else if (div_ready) begin
                         new_average <= div_result;
                         new_dividing <= 0;
                         results[0+:INTERMEDIATE_DATA_WIDTH] <= div_result << 1;
@@ -158,14 +177,14 @@ always @(*) begin
         end
         else if (!dividing & calculated_average) begin
             new_dividing <= 1;
-            dividendo <= (current * average) * sum_index;
-            divisor <= accumulator + current;
-            new_accumulator <= accumulator + current;
+            new_dividendo <= (diff_results[sum_index] * average) * sum_index;
+            new_divisor <= accumulator + diff_results[sum_index];
+            new_accumulator <= accumulator + diff_results[sum_index];
             new_div_reset <= 1;
         end
         else begin
             if (div_reset) new_div_reset <= 0;
-            if (div_ready) begin
+            else if (div_ready) begin
                 results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] <= div_result;
                 current_result <= results[sum_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
                 new_dividing <= 0;

@@ -7,7 +7,7 @@ module sar_divisor_module_tb;
 
     reg [39:0] dividendo;
     reg [39:0] divisor;
-    reg [39:0] result;
+    wire [39:0] result;
     reg reset;
     wire ready;
 
