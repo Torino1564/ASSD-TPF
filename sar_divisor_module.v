@@ -8,7 +8,6 @@ module sar_divisor_module #(
     input wire reset,
     output reg ready
 );
-    // Usamos un divisor de busqueda lineal
     reg [BITS-1:0] new_result;
     reg [BITS-1:0] follower;
     reg [BITS-1:0] current_follower;

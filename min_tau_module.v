@@ -8,7 +8,8 @@ module min_tau_module #(
     input wire clk,
     input wire reset,
     output reg ready,
-    input wire [(2 ** WINDOW_SIZE_BITS + MAX_TAU)*DATA_WIDTH-1:0] data,
+    input wire [(2 ** WINDOW_SIZE_BITS + MAX_TAU)
+                *DATA_WIDTH-1:0] data,
     output reg [7:0] min_tau
 );
     wire [MAX_TAU*INTERMEDIATE_DATA_WIDTH-1:0] dt_prima;
@@ -17,7 +18,7 @@ module min_tau_module #(
 
     reg reset_modiff = 1;
     wire ready_modiff;
-    wire [INTERMEDIATE_DATA_WIDTH-1:0] modiff_average;
+    wire [INTERMEDIATE_DATA_WIDTH-5:0] modiff_average;
 
     reg first;
     reg new_first;
@@ -37,17 +38,17 @@ module min_tau_module #(
         .average(modiff_average)
     );
 
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] divisor;
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_divisor;
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] dividendo;
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_dividendo;
-    wire [INTERMEDIATE_DATA_WIDTH-1:0] div_result;
+    reg     [(INTERMEDIATE_DATA_WIDTH-4)-1:0] divisor;
+    reg     [(INTERMEDIATE_DATA_WIDTH-4)-1:0] new_divisor;
+    reg     [(INTERMEDIATE_DATA_WIDTH-4)-1:0] dividendo;
+    reg     [(INTERMEDIATE_DATA_WIDTH-4)-1:0] new_dividendo;
+    wire    [(INTERMEDIATE_DATA_WIDTH-4)-1:0] div_result;
     reg div_reset;
     reg new_div_reset;
     wire div_ready;
 
     // Modulo de division
-    sar_divisor_module #(.BITS(INTERMEDIATE_DATA_WIDTH)) divisor_mod (
+    sar_divisor_module #(.BITS(INTERMEDIATE_DATA_WIDTH-4)) divisor_mod (
         .clk(clk),
         .divisor(divisor),
         .dividendo(dividendo),
@@ -61,8 +62,8 @@ module min_tau_module #(
     reg [7:0] tau_index = 0;
     reg [7:0] new_tau_index = 0;
 
-    reg [5:0] state;
-    reg [5:0] new_state;
+    reg [3:0] state;
+    reg [3:0] new_state;
     localparam IDLE = 0;
     localparam FINDING_THRESHOLD = 1;
     localparam ITERATING = 2;
@@ -70,8 +71,8 @@ module min_tau_module #(
     localparam WAITING_THRESHOLD = 4;
     localparam SMALLEST_TAU = 5;
 
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] threshold;
-    reg [INTERMEDIATE_DATA_WIDTH-1:0] new_threshold;
+    reg [INTERMEDIATE_DATA_WIDTH-3:0] threshold;
+    reg [INTERMEDIATE_DATA_WIDTH-3:0] new_threshold;
 
     // Bloque syncronico
     always @(posedge clk ) begin
@@ -121,8 +122,8 @@ module min_tau_module #(
                     end
                 end
                 FINDING_THRESHOLD: begin
-                    new_dividendo <= modiff_average * THRESHOLD;
-                    new_divisor <= 100;
+                    new_dividendo <= modiff_average;
+                    new_divisor <= 100 / THRESHOLD;
                     new_div_reset <= 1;
                     new_state <= WAITING_THRESHOLD;
                 end
@@ -134,7 +135,8 @@ module min_tau_module #(
                     end
                 end
                 ITERATING: begin
-                    if (dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] < threshold) begin
+                    current <= current_dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH];
+                    if (current_dt_prima[tau_index*INTERMEDIATE_DATA_WIDTH+:INTERMEDIATE_DATA_WIDTH] < threshold) begin
                         new_min_tau <= tau_index;
                         new_state <= DONE;
                     end

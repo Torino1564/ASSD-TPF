@@ -1,8 +1,8 @@
 module diff_module #(
     parameter WINDOW_SIZE_BITS = 8,
-    parameter INTERMEDIATE_DATA_WIDTH = 64,
+    parameter INTERMEDIATE_DATA_WIDTH = 32,
     parameter DATA_WIDTH = 16,
-    parameter MAX_TAU = 40 // representa 20ms
+    parameter MAX_TAU = 40
 ) (
     input clk,
     input wire [(2**WINDOW_SIZE_BITS + MAX_TAU)*DATA_WIDTH-1:0] data_in,
@@ -57,11 +57,12 @@ module diff_module #(
             end
 
             // guardo y aumento
-            new_accumulator <= accumulator + diff*diff;
+            new_accumulator <= accumulator + (diff*diff >> 2);
             new_sum_index <= sum_index + 1;
                 
             if (sum_index == (2 ** WINDOW_SIZE_BITS) - 1) begin
                 new_ready <= 1'b1;
+                new_accumulator <= accumulator >> 2;
             end
         end
     end

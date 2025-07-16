@@ -13,7 +13,7 @@ reg [7:0] audio;
 reg eoc;
 
 always
-    #10 clk = ~clk;  
+    #85 clk = ~clk;  
 
 // dut
 top top_dut(
@@ -48,7 +48,7 @@ initial begin
         #25600000 $finish;
     end
 
-parameter FREQ = 800;
+parameter FREQ = 2500;
 parameter FS = 20000;
 parameter NUM_SAMPLES = $ceil(FS / FREQ);
 reg [7:0] sin [NUM_SAMPLES];
